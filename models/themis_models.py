@@ -50,3 +50,4 @@ def build_simple_themis(vocab, seq_max_len, embedding_dim, w_embed_matrix=None):
                         optimizer=adam,
                         metrics=['binary_accuracy'])
     print(model.summary())
+    return model
