@@ -49,6 +49,15 @@ def main():
         embed_table = [embedd_matrix]
     
     model = build_simple_themis(vocab, max_token, embedd_dim, embed_table)
+    logger.info('Training')
+    model.fit(X_train, Y_train,
+            batch_size=32,
+            epochs=20)
+
+    logger.info('Evaluation')
+    loss, acc = model.evaluate(X_test, Y_test,
+                            batch_size=32)
+    logger.info('Test loss / test accuracy = {:.4f} / {:.4f}'.format(loss, acc))
 
 
 if __name__ == "__main__":
