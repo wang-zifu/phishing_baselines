@@ -109,6 +109,7 @@ conda-env
 .idea/
 .vscode
 ISWPA2.0 Train Data/
+embeddings/glove.6B.50d.txt
 
 # libs
 pyStatParser/
