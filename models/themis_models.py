@@ -38,6 +38,7 @@ def build_simple_themis(vocab, seq_max_len, embedding_dim, w_embed_matrix=None):
     sent_representation = Multiply()([reshaped, attention])
     sent_representation = Lambda(lambda xin: K.sum(xin, axis=-2), output_shape=(32 * 2,))(sent_representation)
 
+    # ------model output----------
     model_final_ = Dense(32, activation='relu')(sent_representation)
     model_final_ = Dropout(0.5)(model_final_)
     model_final = Dense(1, activation='sigmoid')(model_final_)
