@@ -43,7 +43,7 @@ def create_vocab(data, vocab_size, to_lower):
         for word, freq in sorted_word_freqs:
             if freq > 1:
                 vocab_size += 1
-    vocab = {'<pad>': 0, '<unk>': 1, 'NUM': 2, 'LONG': 3, 'URL': 4, 'EMAIL': 5}
+    vocab = {'<pad>': 0, '<unk>': 1}
     vcb_len = len(vocab)
     index = vcb_len
     for word, _ in sorted_word_freqs[:vocab_size - vcb_len]:

@@ -1,12 +1,16 @@
 from utils.clean_data import process_legit_phish_data
 from utils.preprocess_data import split_data, extract_labels, create_vocab, read_dataset
-from utils.general_utils import get_logger, padding_email_sequences
+from utils.general_utils import get_logger, padding_email_sequences, load_word_embedding_dict, build_embedd_table
+from models.themis_models import build_simple_themis
 
 logger = get_logger("Train ...")
 
 
 def main():
     all_data = process_legit_phish_data(legit_path='ISWPA2.0 Train Data/IWSPA2.0_Training_No_Header/legit/', phish_path='ISWPA2.0 Train Data/IWSPA2.0_Training_No_Header/phish/')
+    embedding_path = 'embeddings/glove.6B.50d.txt'
+    embedding = 'glove'
+    embedd_dim = 50
     train, dev, test = split_data(all_data)
     x_train, y_train = extract_labels(train)
     x_dev, y_dev = extract_labels(dev)
@@ -33,6 +37,18 @@ def main():
     logger.info('Y train shape: {}'.format(Y_train.shape))
     logger.info('Y dev shape: {}'.format(Y_dev.shape))
     logger.info('Y test shape: {}'.format(Y_test.shape))
+
+    if embedding_path:
+        embedd_dict, embedd_dim, _ = load_word_embedding_dict(embedding, embedding_path, vocab, logger, embedd_dim)
+        embedd_matrix = build_embedd_table(vocab, embedd_dict, embedd_dim, logger, caseless=True)
+    else:
+        embedd_matrix = None
+
+    if embedd_matrix is not None:
+        embedd_dim = embedd_matrix.shape[1]
+        embed_table = [embedd_matrix]
+    
+    model = build_simple_themis(vocab, max_token, embedd_dim, embed_table)
 
 
 if __name__ == "__main__":
