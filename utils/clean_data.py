@@ -1,6 +1,7 @@
 import os
 import nltk
 import re
+from random import shuffle
 
 
 def replace_email_addresses(text):
@@ -63,18 +64,26 @@ def remove_html(text):
 
 
 def remove_css(text):
+    print("TOTAL EMAILS: {}".format(len(text)))
     clean = []
     regex = re.compile(r'\b(\w+):(\w+)(?=;)')
     for item in text:
-        print(re.findall(regex, item))
         iter = re.finditer(regex, item)
         indices = [(m.start(0), m.end(0)) for m in iter]
-        print(indices)
         if indices:
-            print(item)
-            css_part = item[indices[0][0]:indices[-1][1]]
-            print()
-            print(css_part)
+            continue
+        else:
+            clean.append(item)
+    print("CSS REMOVED EMAILS: {}".format(len(clean)))
+    return clean
+
+
+def remove_equals(text):
+    replaced = []
+    for item in text:
+        item = item.replace('= ', '')
+        replaced.append(item)
+    return replaced
 
 
 def remove_nonsense(text):
@@ -118,6 +127,14 @@ def get_text(root_path):
     return emails
 
 
+def tokenize_text(text):
+    tokenized = []
+    for item in text:
+        tokens = nltk.word_tokenize(item)
+        tokenized.append(tokens)
+    return tokenized
+
+
 def append_label(text, phish=False):
     label_appended = []
     if not phish:
@@ -129,9 +146,13 @@ def append_label(text, phish=False):
     return label_appended
 
 
-def main():
-    legit_path = 'ISWPA2.0 Train Data/IWSPA2.0_Training_No_Header/legit/'
-    phish_path = 'ISWPA2.0 Train Data/IWSPA2.0_Training_No_Header/phish/'
+def combine_phish_and_legit(legit, phish):
+    legit.extend(phish)
+    shuffle(legit)
+    return legit
+
+
+def process_legit_phish_data(legit_path='ISWPA2.0 Train Data/IWSPA2.0_Training_No_Header/legit/', phish_path='ISWPA2.0 Train Data/IWSPA2.0_Training_No_Header/phish/'):
     legit_text = get_text(legit_path)
     phish_text = get_text(phish_path)
     legit_text = remove_new_line(legit_text)
@@ -148,15 +169,19 @@ def main():
     phish_text = remove_nonsense(phish_text)
     legit_text = remove_excess_spaces(legit_text)
     phish_text = remove_excess_spaces(phish_text)
-    remove_css(legit_text)
+    legit_text = remove_css(legit_text)
+    phish_text = remove_css(phish_text)
     legit_text = replace_numbers(legit_text)
     phish_text = replace_numbers(phish_text)
+    legit_text = remove_equals(legit_text)
+    phish_text = remove_equals(phish_text)
+    legit_text = tokenize_text(legit_text)
+    phish_text = tokenize_text(phish_text)
     legit_text = append_label(legit_text, phish=False)
     phish_text = append_label(phish_text, phish=True)
-    # for i in range(len(legit_text)):
-    #     print("EMAIL: {}".format(i))
-    #     print(legit_text[i])
+    combined = combine_phish_and_legit(legit_text, phish_text)
+    return combined
 
 
 if __name__ == '__main__':
-    main()
+    process_legit_phish_data()

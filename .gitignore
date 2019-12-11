@@ -104,10 +104,10 @@ conda-env
 # mypy
 .mypy_cache/
 
-
 # project specific
 .DS_Store
 .idea/
+.vscode
 ISWPA2.0 Train Data/
 
 # libs
