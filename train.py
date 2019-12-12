@@ -18,7 +18,7 @@ def main():
     embedd_dim = 50
     epochs = 20
     batch_size = 16
-    baby = False
+    baby = True
     if baby:
         all_data = all_data[:100]
     train, dev, test = split_data(all_data)

@@ -1,7 +1,7 @@
 import os
 import nltk
 import re
-from random import shuffle
+import random
 
 
 def replace_email_addresses(text):
@@ -151,7 +151,7 @@ def append_label(text, phish=False):
 
 def combine_phish_and_legit(legit, phish):
     legit.extend(phish)
-    shuffle(legit)
+    random.Random(4).shuffle(legit)
     return legit
 
 
