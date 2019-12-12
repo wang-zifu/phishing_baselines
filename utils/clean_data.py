@@ -131,7 +131,10 @@ def tokenize_text(text):
     tokenized = []
     for item in text:
         tokens = nltk.word_tokenize(item)
-        tokenized.append(tokens)
+        if len(tokens) > 300:
+            tokenized.append(tokens[:300])
+        else:
+            tokenized.append(tokens)
     return tokenized
 
 
