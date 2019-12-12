@@ -16,9 +16,9 @@ def main():
     embedding_path = 'embeddings/glove.6B.50d.txt'
     embedding = 'glove'
     embedd_dim = 50
-    epochs = 1
+    epochs = 20
     batch_size = 16
-    baby = True
+    baby = False
     if baby:
         all_data = all_data[:100]
     train, dev, test = split_data(all_data)
@@ -112,6 +112,8 @@ def main():
     logger.info('[TEST]   ACC:  %.3f, PREC: %.3f, REC: %.3f, F1: %.3f, FPR: %.3f \n(Best ACC: {{%.3f}}, Best PREC: {{%.3f}}, Best REC: {{%.3f}}, Best F1: {{%.3f}}, Best FPR: {{%.3f}})' % (
         test_acc, test_precision, test_recall, test_f1, test_false_pos_rate, 
         best_test_acc, best_test_precision, best_test_recall, best_test_f1, best_test_false_pos_rate))
+    logger.info(
+            '--------------------------------------------------------------------------------------------------------------------------')
 
     logger.info("Train model")
     for ii in range(epochs):
@@ -159,7 +161,11 @@ def main():
         logger.info('[TEST]   ACC:  %.3f, PREC: %.3f, REC: %.3f, F1: %.3f, FPR: %.3f \n(Best ACC: {{%.3f}}, Best PREC: {{%.3f}}, Best REC: {{%.3f}}, Best F1: {{%.3f}}, Best FPR: {{%.3f}})' % (
             test_acc, test_precision, test_recall, test_f1, test_false_pos_rate, 
             best_test_acc, best_test_precision, best_test_recall, best_test_f1, best_test_false_pos_rate))
+        logger.info(
+            '--------------------------------------------------------------------------------------------------------------------------')
 
+    logger.info(
+            '--------------------------------------------------------------------------------------------------------------------------')
     logger.info('[DEV]   BEST ACC:  %.3f, BEST PREC: %.3f, BEST REC: %.3f, BEST F1: %.3f, BEST FPR: %.3f' % (
         best_dev_acc, best_dev_precision, best_dev_recall, best_dev_f1, best_dev_false_pos_rate))
     logger.info('[TEST]   BEST ACC:  %.3f, BEST PREC: %.3f, BEST REC: %.3f, BEST F1: %.3f, BEST FPR: %.3f' % (
