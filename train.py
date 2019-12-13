@@ -2,11 +2,12 @@ from time import time
 import keras.backend as K
 import numpy as np
 from sklearn.metrics import accuracy_score
+from keras.preprocessing.sequence import pad_sequences
 from utils.metrics import precision, recall, f1_score, false_positive_rate
 from utils.clean_data import process_legit_phish_data
-from utils.preprocess_data import split_data, extract_labels, create_vocab, read_dataset
+from utils.preprocess_data import split_data, extract_labels, create_vocab, read_dataset, create_char_vocab, read_dataset_word_char
 from utils.general_utils import get_logger, padding_email_sequences, load_word_embedding_dict, build_embedd_table
-from models.themis_models import build_simple_themis
+from models.themis_models import build_simple_themis, build_simple_themis_word_char
 
 logger = get_logger("Train ...")
 
@@ -15,20 +16,39 @@ def main():
     all_data = process_legit_phish_data(legit_path='ISWPA2.0 Train Data/IWSPA2.0_Training_No_Header/legit/', phish_path='ISWPA2.0 Train Data/IWSPA2.0_Training_No_Header/phish/')
     embedding_path = 'embeddings/glove.6B.50d.txt'
     embedding = 'glove'
+    char_model = True
     embedd_dim = 50
     epochs = 20
     batch_size = 16
-    baby = True
+    baby = False
     if baby:
         all_data = all_data[:100]
     train, dev, test = split_data(all_data)
     x_train, y_train = extract_labels(train)
     x_dev, y_dev = extract_labels(dev)
     x_test, y_test = extract_labels(test)
-    vocab = create_vocab(x_train, vocab_size=20000, to_lower=False)
-    x_train, max_token_train = read_dataset(x_train, vocab, to_lower=False)
-    x_dev, max_token_dev = read_dataset(x_dev, vocab, to_lower=False)
-    x_test, max_token_test = read_dataset(x_test, vocab, to_lower=False)
+    vocab = create_vocab(x_train, vocab_size=20000, to_lower=True)
+    if char_model:
+        char_vocab = create_char_vocab(x_train, to_lower=True)
+        x_train, x_train_char, max_token_train, max_char_token_train = read_dataset_word_char(x_train, vocab, char_vocab, to_lower=True)
+        x_dev, x_dev_char, max_token_dev, max_char_token_dev = read_dataset_word_char(x_dev, vocab, char_vocab, to_lower=True)
+        x_test, x_test_char, max_token_test, max_char_token_test = read_dataset_word_char(x_test, vocab, char_vocab, to_lower=True)
+        
+        max_char_token = max(max_char_token_train, max_char_token_dev, max_char_token_test)
+        if max_char_token > 300:
+            max_char_token = 300
+        # X_train_char, _, _ = padding_email_sequences(x_train_char, y_train, max_char_token, post_padding=True)
+        # X_dev_char, _, _ = padding_email_sequences(x_dev_char, y_dev, max_char_token, post_padding=True)
+        # X_test_char, _, _ = padding_email_sequences(x_test_char, y_test, max_char_token, post_padding=True)
+
+        X_train_char = pad_sequences(x_train_char, maxlen=300, truncating='post')
+        X_dev_char = pad_sequences(x_dev_char, maxlen=300, truncating='post')
+        X_test_char = pad_sequences(x_test_char, maxlen=300, truncating='post')
+    else:
+        char_vocab = None
+        x_train, max_token_train = read_dataset(x_train, vocab, to_lower=True)
+        x_dev, max_token_dev = read_dataset(x_dev, vocab, to_lower=True)
+        x_test, max_token_test = read_dataset(x_test, vocab, to_lower=True)
 
     max_token = max(max_token_train, max_token_dev, max_token_test)
     logger.info('Max tokens train: {}'.format(max_token_train))
@@ -44,6 +64,10 @@ def main():
     logger.info('X dev shape: {}'.format(X_dev.shape))
     logger.info('X test shape: {}'.format(X_test.shape))
 
+    logger.info('X train char shape: {}'.format(X_train_char.shape))
+    logger.info('X dev char shape: {}'.format(X_dev_char.shape))
+    logger.info('X test char shape: {}'.format(X_test_char.shape))
+
     logger.info('Y train shape: {}'.format(Y_train.shape))
     logger.info('Y dev shape: {}'.format(Y_dev.shape))
     logger.info('Y test shape: {}'.format(Y_test.shape))
@@ -58,7 +82,10 @@ def main():
         embedd_dim = embedd_matrix.shape[1]
         embed_table = [embedd_matrix]
     
-    model = build_simple_themis(vocab, max_token, embedd_dim, embed_table)
+    if char_model:
+        model = build_simple_themis_word_char(vocab, char_vocab, max_token, max_char_token, embedd_dim, embed_table)
+    else:
+        model = build_simple_themis(vocab, max_token, embedd_dim, embed_table)
 
     logger.info("Initial evaluation: ")
     best_dev_acc = -1
@@ -73,9 +100,14 @@ def main():
     best_test_f1 = -1
     best_test_false_pos_rate = -1
     
-    train_pred = model.predict(X_train, batch_size=batch_size)
-    dev_pred = model.predict(X_dev, batch_size=batch_size)
-    test_pred = model.predict(X_test, batch_size=batch_size)
+    if char_model:
+        train_pred = model.predict([X_train, X_train_char], batch_size=batch_size)
+        dev_pred = model.predict([X_dev, X_dev_char], batch_size=batch_size)
+        test_pred = model.predict([X_test, X_test_char], batch_size=batch_size)
+    else:
+        train_pred = model.predict(X_train, batch_size=batch_size)
+        dev_pred = model.predict(X_dev, batch_size=batch_size)
+        test_pred = model.predict(X_test, batch_size=batch_size)
     
     train_pred = np.round(train_pred)
     dev_pred = np.round(dev_pred)
@@ -117,14 +149,24 @@ def main():
 
     logger.info("Train model")
     for ii in range(epochs):
-        logger.info('Epoch %s/%s' % (str(ii + 1), epochs))
-        start_time = time()
-        model.fit(X_train, Y_train, batch_size=batch_size, epochs=1, verbose=0, shuffle=True)
-        tt_time = time() - start_time
-        logger.info("Training one epoch in %.3f s" % tt_time)
-        train_pred = model.predict(X_train, batch_size=batch_size)
-        dev_pred = model.predict(X_dev, batch_size=batch_size)
-        test_pred = model.predict(X_test, batch_size=batch_size)
+        if char_model:
+            logger.info('Epoch %s/%s' % (str(ii + 1), epochs))
+            start_time = time()
+            model.fit([X_train, X_train_char], Y_train, batch_size=batch_size, epochs=1, verbose=0, shuffle=True)
+            tt_time = time() - start_time
+            logger.info("Training one epoch in %.3f s" % tt_time)
+            train_pred = model.predict([X_train, X_train_char], batch_size=batch_size)
+            dev_pred = model.predict([X_dev, X_dev_char], batch_size=batch_size)
+            test_pred = model.predict([X_test, X_test_char], batch_size=batch_size)
+        else:
+            logger.info('Epoch %s/%s' % (str(ii + 1), epochs))
+            start_time = time()
+            model.fit(X_train, Y_train, batch_size=batch_size, epochs=1, verbose=0, shuffle=True)
+            tt_time = time() - start_time
+            logger.info("Training one epoch in %.3f s" % tt_time)
+            train_pred = model.predict(X_train, batch_size=batch_size)
+            dev_pred = model.predict(X_dev, batch_size=batch_size)
+            test_pred = model.predict(X_test, batch_size=batch_size)
 
         train_pred = np.round(train_pred)
         dev_pred = np.round(dev_pred)

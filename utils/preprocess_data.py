@@ -52,8 +52,29 @@ def create_vocab(data, vocab_size, to_lower):
     return vocab
 
 
+def create_char_vocab(data, to_lower):
+    logger.info("Create char vocabulary")
+    total_chars, unique_chars = 0, 0
+    char_vocab = {}
+    start_index = 1
+    char_vocab['<unk>'] = start_index
+    next_index = start_index + 1
+    for content in data:
+        if to_lower:
+            content = [w.lower() for w in content]
+        for word in content:
+            for char in list(word):
+                if not char in char_vocab:
+                    char_vocab[char] = next_index
+                    next_index += 1
+                    unique_chars += 1
+                total_chars += 1
+    logger.info('  %i total chars, %i unique chars' % (total_chars, unique_chars))
+    return char_vocab
+
+
 def read_dataset(data, vocab, to_lower):
-    logger.info('Reading dataset')
+    logger.info('Reading dataset just words')
     data_x = []
     unk_hit, total, long_count = 0., 0., 0.
     max_tokennum = -1
@@ -79,3 +100,45 @@ def read_dataset(data, vocab, to_lower):
     logger.info('  <unk> hit rate: %.2f%%' % (100*unk_hit/total))
     logger.info(' number of long emails: {}'.format(long_count))
     return data_x, max_tokennum
+
+
+def read_dataset_word_char(data, vocab, char_vocab, to_lower):
+    logger.info('Reading dataset words and chars')
+    data_x, char_x = [], []
+    unk_hit, total, long_count = 0., 0., 0.
+    max_tokennum = -1
+    max_charnum = -1
+    for content in data:
+        if to_lower:
+            tokens = [w.lower() for w in content]
+        else:
+            tokens = content
+        indices = []
+        c_indices = []
+        length = len(tokens)
+        if max_tokennum < length:
+            max_tokennum = length
+        if length > 2000:
+            long_count += 1
+        for token in tokens:
+            if token in vocab:
+                indices.append(vocab[token])
+            else:
+                indices.append(vocab['<unk>'])
+                unk_hit += 1
+            total += 1
+
+            # Characters per token
+            current_chars = list(token)
+            for c in current_chars:
+                try:
+                    c_indices.append(char_vocab[c])
+                except:
+                    c_indices.append(char_vocab['<unk>'])
+            if len(c_indices) > max_charnum:
+                max_charnum = len(c_indices)
+        data_x.append(indices)
+        char_x.append(c_indices)
+    logger.info('  <unk> hit rate: %.2f%%' % (100*unk_hit/total))
+    logger.info(' number of long emails: {}'.format(long_count))
+    return data_x, char_x, max_tokennum, max_charnum
