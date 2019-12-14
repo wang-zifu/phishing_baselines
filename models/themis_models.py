@@ -75,7 +75,7 @@ def build_simple_themis_word_char(vocab, char_vocab, seq_max_len, char_seq_max_l
         bc_pool_rnn = Lambda(lambda x: K.max(x, axis=1), output_shape=(128,))(bc_z)
     
     # ------word----------
-    with tf.device('/gpu:%d' % (3)):
+    with tf.device('/gpu:%d' % (1)):
         bw_embedding_layer = Embedding(len(vocab),
                                         EMBEDDING_DIM,
                                         weights=w_embed,
