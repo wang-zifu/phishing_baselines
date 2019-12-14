@@ -1,6 +1,7 @@
 from time import time
 import keras.backend as K
 import numpy as np
+import argparse
 from keras.preprocessing.sequence import pad_sequences
 from utils.clean_data import process_legit_phish_data
 from utils.preprocess_data import split_data, extract_labels, create_vocab, read_dataset, create_char_vocab, read_dataset_word_char
@@ -12,16 +13,32 @@ logger = get_logger("Train ...")
 
 
 def main():
-    all_data = process_legit_phish_data(legit_path='ISWPA2.0 Train Data/IWSPA2.0_Training_No_Header/legit/', phish_path='ISWPA2.0 Train Data/IWSPA2.0_Training_No_Header/phish/')
-    embedding_path = 'embeddings/glove.6B.50d.txt'
-    embedding = 'glove'
-    embedd_dim = 50
-    epochs = 20
-    batch_size = 16
-    baby = True
+    parser = argparse.ArgumentParser(description="Word and char themis model")
+    parser.add_argument('--num_epochs', type=int, default=20, help='Number of epochs for training')
+    parser.add_argument('--batch_size', type=int, default=16, help='Number of emails in each batch')
+    parser.add_argument('--embedding', type=str, default='glove', help='Word embedding type, word2vec, senna or glove')
+    parser.add_argument('--embedding_dim', type=int, default=50, help='Dimension of embedding')
+    parser.add_argument('--embedding_path', type=str, default='embeddings/glove.6B.50d.txt', help='Path to embedding vec file')
+    parser.add_argument('--baby', action='store_true', help='Set to True for small data quantity for debug')
+    parser.add_argument('--seed', type=int, default=42, help='Set seed for data split')
+    parser.add_argument('--legit_path', type=str, default='ISWPA2.0 Train Data/IWSPA2.0_Training_No_Header/legit/', help='Path to legit emails folder')
+    parser.add_argument('--phish_path', type=str, default='ISWPA2.0 Train Data/IWSPA2.0_Training_No_Header/phish/', help='Path to phish emails folder')
+
+    args = parser.parse_args()
+    legit_path = args.legit_path
+    phish_path = args.phish_path
+    embedding_path = args.embedding_path
+    embedding = args.embedding
+    embedd_dim = args.embedding_dim
+    epochs = args.num_epochs
+    batch_size = args.batch_size
+    baby = args.baby
+    seed = args.seed
+
+    all_data = process_legit_phish_data(legit_path=legit_path, phish_path=phish_path)
     if baby:
         all_data = all_data[:100]
-    train, dev, test = split_data(all_data)
+    train, dev, test = split_data(all_data, random_state=seed)
     x_train, y_train = extract_labels(train)
     x_dev, y_dev = extract_labels(dev)
     x_test, y_test = extract_labels(test)
