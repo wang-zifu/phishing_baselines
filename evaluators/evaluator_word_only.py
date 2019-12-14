@@ -53,13 +53,13 @@ class Evaluator:
         self.dev_precision = precision(self.Y_dev, dev_pred)
         self.dev_recall = recall(self.Y_dev, dev_pred)
         self.dev_f1 = f1_score(self.Y_dev, dev_pred)
-        self.dev_false_pos_rate = f1_score(self.Y_dev, dev_pred)
+        self.dev_false_pos_rate = false_positive_rate(self.Y_dev, dev_pred)
 
         self.test_acc = accuracy_score(self.Y_test, test_pred)
         self.test_precision = precision(self.Y_test, test_pred)
         self.test_recall = recall(self.Y_test, test_pred)
         self.test_f1 = f1_score(self.Y_test, test_pred)
-        self.test_false_pos_rate = f1_score(self.Y_test, test_pred)
+        self.test_false_pos_rate = false_positive_rate(self.Y_test, test_pred)
 
         if self.dev_acc > self.best_dev_acc:
             self.best_dev_acc = self.dev_acc
