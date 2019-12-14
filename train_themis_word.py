@@ -3,9 +3,9 @@ import keras.backend as K
 import numpy as np
 from keras.preprocessing.sequence import pad_sequences
 from utils.clean_data import process_legit_phish_data
-from utils.preprocess_data import split_data, extract_labels, create_vocab, read_dataset, create_char_vocab, read_dataset_word_char
+from utils.preprocess_data import split_data, extract_labels, create_vocab, read_dataset, create_char_vocab
 from utils.general_utils import get_logger, padding_email_sequences, load_word_embedding_dict, build_embedd_table
-from models.themis_models import build_simple_themis, build_simple_themis_word_char
+from models.themis_models import build_simple_themis
 from evaluators.evaluator_word_only import Evaluator
 
 logger = get_logger("Train ...")
