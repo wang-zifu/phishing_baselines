@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-best_calc='average'
 model_name='themis_word_char'
 for seed in {12,22,32,42,52}
 do
