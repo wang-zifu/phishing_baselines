@@ -1,6 +1,7 @@
 from time import time
 import keras.backend as K
 import numpy as np
+from keras import optimizers
 from keras.models import model_from_json
 import argparse
 from utils.clean_data import process_legit_phish_data
@@ -78,11 +79,21 @@ def main():
         embedd_dim = embedd_matrix.shape[1]
         embed_table = [embedd_matrix]
 
-    json_file = open('model.json', 'r')
+    saved_path = 'saved_models/word_only_themis_seed' + str(seed)
+    model_path = saved_path + '.json'
+    weights_path = saved_path + '.h5'
+    json_file = open(model_path, 'r')
     loaded_model = json_file.read()
     json_file.close()
     model = model_from_json(loaded_model)
-    model.load_weights('model.h5')
+    model.load_weights(weights_path)
+
+    adam = optimizers.adam(lr=0.0001)
+    model.compile(loss='binary_crossentropy',
+                  optimizer=adam,
+                  metrics=['binary_accuracy'])
+    print(model.summary())
+
     evaluator = Evaluator(model, X_train, X_dev, X_test, Y_train, Y_dev, Y_test, batch_size)
 
     logger.info("Initial evaluation: ")

@@ -7,8 +7,9 @@ from sklearn.model_selection import train_test_split
 from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
 from models.themis_models import build_simple_themis
-from evaluators.evaluator_word_only import Evaluator
+from evaluators.evaluator_sentiment_word_only import Evaluator
 from utils.clean_data import process_legit_phish_data
+from utils.preprocess_data import split_data, extract_labels, create_vocab, read_dataset
 from utils.general_utils import get_logger, padding_email_sequences, load_word_embedding_dict, build_embedd_table
 
 
@@ -35,10 +36,12 @@ def main():
     parser.add_argument('--embedding', type=str, default='glove', help='Word embedding type, word2vec, senna or glove')
     parser.add_argument('--embedding_dim', type=int, default=50, help='Dimension of embedding')
     parser.add_argument('--embedding_path', type=str, default='embeddings/glove.6B.50d.txt', help='Path to embedding vec file')
+    parser.add_argument('--seed', type=int, default=42, help='Set seed for data split')
     parser.add_argument('--legit_path', type=str, default='ISWPA2.0 Train Data/IWSPA2.0_Training_No_Header/legit/',
                         help='Path to legit emails folder')
     parser.add_argument('--phish_path', type=str, default='ISWPA2.0 Train Data/IWSPA2.0_Training_No_Header/phish/',
                         help='Path to phish emails folder')
+    parser.add_argument('--baby', action='store_true', help='Set to True for small data quantity for debug')
 
     args = parser.parse_args()
     epochs = args.num_epochs
@@ -48,54 +51,60 @@ def main():
     embedd_dim = args.embedding_dim
     legit_path = args.legit_path
     phish_path = args.phish_path
+    seed = args.seed
+    baby = args.baby
 
     all_data = process_legit_phish_data(legit_path=legit_path, phish_path=phish_path)
 
+    train, dev, test = split_data(all_data, random_state=seed)
+    x_train_phish, y_train_phish = extract_labels(train)
+    vocab = create_vocab(x_train_phish, vocab_size=20000, to_lower=True)
+
     data_path = 'ISWPA2.0 Train Data/IMDB Dataset.csv'
-    movie_reviews = pd.read_csv(data_path)
+    if baby:
+        movie_reviews = pd.read_csv(data_path)[:100]
+    else:
+        movie_reviews = pd.read_csv(data_path)
     movie_reviews.isnull().values.any()
     X = []
     sentences = list(movie_reviews['review'])
     for sen in sentences:
         X.append(preprocess_text(sen))
-    
+
+    X, max_token = read_dataset(X, vocab, to_lower=True)
+    max_token = 300
+
     y = movie_reviews['sentiment']
     y = np.array(list(map(lambda x: 1 if x=="positive" else 0, y)))
     X_train, X_test_dev, y_train, y_test_dev = train_test_split(X, y, test_size=0.40, random_state=42)
     X_dev, X_test, y_dev, y_test = train_test_split(X_test_dev, y_test_dev, test_size=0.50, random_state=42)
 
-    tokenizer = Tokenizer(num_words=5000)
-    tokenizer.fit_on_texts(X_train)
+    X_train = pad_sequences(X_train, maxlen=300, truncating='post')
+    X_dev = pad_sequences(X_dev, maxlen=300, truncating='post')
+    X_test = pad_sequences(X_test, maxlen=300, truncating='post')
 
-    X_train = tokenizer.texts_to_sequences(X_train)
-    X_dev = tokenizer.texts_to_sequences(X_dev)
-    X_test = tokenizer.texts_to_sequences(X_test)
+    logger.info('X train shape: {}'.format(X_train.shape))
+    logger.info('X dev shape: {}'.format(X_dev.shape))
+    logger.info('X test shape: {}'.format(X_test.shape))
 
-    vocab_size = len(tokenizer.word_index) + 1
-    maxlen = 300
-    X_train = pad_sequences(X_train, padding='post', maxlen=maxlen)
-    X_dev = pad_sequences(X_dev, padding='post', maxlen=maxlen)
-    X_test = pad_sequences(X_test, padding='post', maxlen=maxlen)
+    logger.info('Y train shape: {}'.format(y_train.shape))
+    logger.info('Y dev shape: {}'.format(y_dev.shape))
+    logger.info('Y test shape: {}'.format(y_test.shape))
 
-    embeddings_dictionary = dict()
-    glove_file = open(embedding_path)
-    for line in glove_file:
-        records = line.split()
-        word = records[0]
-        vector_dimensions = np.asarray(records[1:], dtype='float32')
-        embeddings_dictionary [word] = vector_dimensions
-    glove_file.close()
+    if embedding_path:
+        embedd_dict, embedd_dim, _ = load_word_embedding_dict(embedding, embedding_path, vocab, logger, embedd_dim)
+        embedd_matrix = build_embedd_table(vocab, embedd_dict, embedd_dim, logger, caseless=True)
+    else:
+        embedd_matrix = None
 
-    embedding_matrix = np.zeros((vocab_size, 50))
-    for word, index in tokenizer.word_index.items():
-        embedding_vector = embeddings_dictionary.get(word)
-        if embedding_vector is not None:
-            embedding_matrix[index] = embedding_vector
-    embedding_matrix = [embedding_matrix]
-    
-    model = build_simple_themis(vocab_size, maxlen, embedd_dim, embedding_matrix)
+    if embedd_matrix is not None:
+        embedd_dim = embedd_matrix.shape[1]
+        embed_table = [embedd_matrix]
 
-    evaluator = Evaluator(model, X_train, X_dev, X_test, y_train, y_dev, y_test, batch_size)
+    model = build_simple_themis(vocab, max_token, embedd_dim, embed_table)
+
+    save_path = 'saved_models/word_only_themis_seed' + str(seed)
+    evaluator = Evaluator(model, X_train, X_dev, X_test, y_train, y_dev, y_test, batch_size, save_path)
 
     logger.info("Initial evaluation: ")
     evaluator.predict()

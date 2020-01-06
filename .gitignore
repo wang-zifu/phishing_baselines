@@ -105,13 +105,15 @@ conda-env
 .mypy_cache/
 
 # project specific
-model.h5
-model.json
+saved_models/*
+!saved_models/saved_models.md
+embeddings/*
+!embeddings/embeddings.md
+ISWPA2.0 Train Data/*
+!ISWPA2.0 Train Data/data.md
 .DS_Store
 .idea/
 .vscode
-ISWPA2.0 Train Data/
-embeddings/glove.6B.50d.txt
 
 # libs
 pyStatParser/
