@@ -87,6 +87,7 @@ def build_embedd_table(word_alphabet, embedd_dict, embedd_dim, logger, caseless)
         else:
             embedd = np.random.uniform(-scale, scale, [1, embedd_dim])
             oov_num += 1
+        b = word_alphabet[word]
         embedd_table[word_alphabet[word], :] = embedd
     oov_ratio = float(oov_num)/(len(word_alphabet)-1)
     logger.info("OOV number =%s, OOV ratio = %f" % (oov_num, oov_ratio))

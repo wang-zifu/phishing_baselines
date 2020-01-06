@@ -65,7 +65,6 @@ def main():
     logger.info('Y train shape: {}'.format(Y_train.shape))
     logger.info('Y dev shape: {}'.format(Y_dev.shape))
     logger.info('Y test shape: {}'.format(Y_test.shape))
-
     if embedding_path:
         embedd_dict, embedd_dim, _ = load_word_embedding_dict(embedding, embedding_path, vocab, logger, embedd_dim)
         embedd_matrix = build_embedd_table(vocab, embedd_dict, embedd_dim, logger, caseless=True)
