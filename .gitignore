@@ -105,6 +105,8 @@ conda-env
 .mypy_cache/
 
 # project specific
+model.h5
+model.json
 .DS_Store
 .idea/
 .vscode

@@ -8,6 +8,7 @@ from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
 from models.themis_models import build_simple_themis
 from evaluators.evaluator_word_only import Evaluator
+from utils.clean_data import process_legit_phish_data
 from utils.general_utils import get_logger, padding_email_sequences, load_word_embedding_dict, build_embedd_table
 
 
@@ -34,6 +35,10 @@ def main():
     parser.add_argument('--embedding', type=str, default='glove', help='Word embedding type, word2vec, senna or glove')
     parser.add_argument('--embedding_dim', type=int, default=50, help='Dimension of embedding')
     parser.add_argument('--embedding_path', type=str, default='embeddings/glove.6B.50d.txt', help='Path to embedding vec file')
+    parser.add_argument('--legit_path', type=str, default='ISWPA2.0 Train Data/IWSPA2.0_Training_No_Header/legit/',
+                        help='Path to legit emails folder')
+    parser.add_argument('--phish_path', type=str, default='ISWPA2.0 Train Data/IWSPA2.0_Training_No_Header/phish/',
+                        help='Path to phish emails folder')
 
     args = parser.parse_args()
     epochs = args.num_epochs
@@ -41,6 +46,10 @@ def main():
     embedding_path = args.embedding_path
     embedding = args.embedding
     embedd_dim = args.embedding_dim
+    legit_path = args.legit_path
+    phish_path = args.phish_path
+
+    all_data = process_legit_phish_data(legit_path=legit_path, phish_path=phish_path)
 
     data_path = 'ISWPA2.0 Train Data/IMDB Dataset.csv'
     movie_reviews = pd.read_csv(data_path)

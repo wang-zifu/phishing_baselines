@@ -10,7 +10,7 @@ def build_simple_themis(vocab, seq_max_len, embedding_dim, w_embed_matrix=None):
     EMBEDDING_DIM = embedding_dim
     w_embed = w_embed_matrix
 
-    bw_embedding_layer = Embedding(vocab,
+    bw_embedding_layer = Embedding(len(vocab),
                                     EMBEDDING_DIM,
                                     weights=w_embed,
                                     input_length=seq_max_len, trainable=True,
